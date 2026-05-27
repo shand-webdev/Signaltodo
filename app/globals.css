@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+:root {
+  --background: #080C18;
+  --foreground: #F8FAFC;
+  --accent: #F59E0B;
+  --card-bg: rgba(13, 20, 38, 0.45);
+  --card-border: rgba(255, 255, 255, 0.05);
+  --card-border-glow: rgba(245, 158, 11, 0.15);
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --color-card-border-glow: var(--card-border-glow);
+  
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  
+  --animate-fade-in: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-pulse-glow: pulse-glow 2s infinite ease-in-out;
+  --animate-slide-up: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.6;
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+  }
+}
+
+/* Custom Base Styles */
+html {
+  background-color: var(--background);
+  color: var(--foreground);
+  scroll-behavior: smooth;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100%;
+  background: radial-gradient(circle at 50% -20%, rgba(245, 158, 11, 0.08) 0%, transparent 60%),
+              radial-gradient(circle at 10% 30%, rgba(29, 78, 216, 0.04) 0%, transparent 50%),
+              var(--background);
+  background-attachment: fixed;
+  overflow: hidden; /* Prevent scrolling for the full-screen feeling */
+}
+
+@media (max-width: 1024px) {
+  body {
+    overflow-y: auto; /* Fallback for small screens or long lists */
+  }
+}
+
+/* Custom Glassmorphism Utility */
+.glass-panel {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-active {
+  border-color: var(--card-border-glow);
+  box-shadow: 0 8px 32px 0 rgba(245, 158, 11, 0.04),
+              0 0 0 1px rgba(245, 158, 11, 0.1) inset;
+}
+
+/* Hide scrollbars for an ultra-clean appearance */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(8, 12, 24, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.3);
+}
+
+/* No-scrollbar utility for mobile swipe lists */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
