@@ -21,16 +21,15 @@ Unlike traditional task managers, Signal requires **no manual organization, cale
 - **Framework:** Next.js 15 (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS v4.0 (Custom Theme, Dark Glows, Responsive CSS Transitions)
-- **AI Completion:** Direct serverless fetch to OpenAI API (`gpt-4o-mini`) or Groq Cloud API (`llama-3.3-70b-versatile`)
+- **AI Completion:** Direct serverless fetch to Groq Cloud API (`llama-3.3-70b-versatile`)
 - **State Management:** Native React state synchronized with browser `localStorage`
 
 ---
 
 ## ⚙️ Environment Configuration
 
-Signal supports **both OpenAI and Groq APIs** out of the box:
-- **OpenAI (Primary):** If `OPENAI_API_KEY` is present, it uses OpenAI's ultra-fast `gpt-4o-mini`.
-- **Groq (Alternative):** If `GROQ_API_KEY` is present, it uses Groq's high-speed `llama-3.3-70b-versatile`.
+Signal supports Groq API out of the box:
+- **Groq:** Uses Groq's high-speed `llama-3.3-70b-versatile` to prioritize tasks with extreme velocity.
 
 ### Setup Environment
 
@@ -40,10 +39,6 @@ Signal supports **both OpenAI and Groq APIs** out of the box:
    ```
 2. Open `.env.local` and add your keys:
    ```env
-   # To use OpenAI (Recommended)
-   OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx
-
-   # OR to use Groq
    GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
    ```
 
@@ -83,7 +78,7 @@ Signal is fully optimized for one-click deployment to Vercel:
    ```bash
    vercel
    ```
-3. Follow the interactive prompts. When prompted for environment variables, add `OPENAI_API_KEY` or `GROQ_API_KEY`.
+3. Follow the interactive prompts. When prompted for environment variables, add `GROQ_API_KEY`.
 4. Deploy to production:
    ```bash
    vercel --prod
@@ -94,7 +89,7 @@ Signal is fully optimized for one-click deployment to Vercel:
 2. Log into the [Vercel Dashboard](https://vercel.com).
 3. Click **Add New** > **Project** and select your GitHub repository.
 4. Expand **Environment Variables** and add:
-   - `OPENAI_API_KEY` (or `GROQ_API_KEY`)
+   - `GROQ_API_KEY`
 5. Click **Deploy**. Vercel will automatically build and deploy your app.
 
 ---
@@ -109,7 +104,7 @@ Signal is fully optimized for one-click deployment to Vercel:
 │   ├── globals.css        # Custom theme values, radial gradients, and scrollbars
 │   └── api/
 │       └── analyze/
-│           └── route.ts   # Core completions server route supporting OpenAI/Groq fallback
+│           └── route.ts   # Core completions server route supporting Groq API
 ├── components/
 │   ├── Header.tsx         # Minimalist Nothing-inspired logo & tagline
 │   ├── BrainDumpInput.tsx # Translucent glass textarea, keyboard shortcuts, test loader

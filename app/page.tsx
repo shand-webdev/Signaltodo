@@ -4,8 +4,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { LifeTask, SignalResponse, PriorityType } from "../types";
 import LoadingState from "../components/LoadingState";
 
-const LOCAL_STORAGE_KEY = "signal_clarity_session";
-const HISTORY_STORAGE_KEY = "signal_history";
+type WorkspaceType = "personal" | "professional";
+
+const getSessionKey = (ws: WorkspaceType) => `signal_${ws}_session`;
+const getHistoryKey = (ws: WorkspaceType) => `signal_${ws}_history`;
 
 interface HistoryItem {
   id: string;
@@ -56,7 +58,27 @@ export default function Home() {
   const [newThoughtsText, setNewThoughtsText] = useState("");
   const [motivationalPhrase, setMotivationalPhrase] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isDumpOpen, setIsDumpOpen] = useState(false);
+  
+  const [workspace, setWorkspace] = useState<WorkspaceType>("personal");
+  const [isWorkspaceFading, setIsWorkspaceFading] = useState<boolean>(false);
+  
+  const isPersonal = workspace === "personal";
+  const accentText = isPersonal ? "text-amber-500" : "text-[#38BDF8]";
+  const accentTextHover = isPersonal ? "hover:text-amber-400" : "hover:text-sky-300";
+  const accentTextMuted = isPersonal ? "text-amber-500/80" : "text-[#38BDF8]/80";
+  const accentBg = isPersonal ? "bg-amber-500/5" : "bg-[#38BDF8]/5";
+  const accentBgHover = isPersonal ? "hover:bg-amber-500" : "hover:bg-[#38BDF8]";
+  const accentBgPill = isPersonal ? "bg-amber-500/20" : "bg-[#38BDF8]/20";
+  const accentBgPing = isPersonal ? "bg-amber-500/40" : "bg-[#38BDF8]/40";
+  const accentBorder = isPersonal ? "border-amber-500" : "border-[#38BDF8]";
+  const accentBorderHover = isPersonal ? "hover:border-amber-500" : "hover:border-[#38BDF8]";
+  const accentBorderFocus = isPersonal ? "focus-within:border-amber-500/20" : "focus-within:border-[#38BDF8]/20";
+  const accentShadow = isPersonal 
+    ? "focus-within:shadow-[0_8px_40px_-15px_rgba(245,158,11,0.06)]"
+    : "focus-within:shadow-[0_8px_40px_-15px_rgba(56,189,248,0.06)]";
+  const accentGlow = isPersonal
+    ? "bg-amber-500/5"
+    : "bg-[#38BDF8]/5";
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -69,8 +91,15 @@ export default function Home() {
     setMotivationalPhrase(MOTIVATIONAL_PHRASES[randomIndex]);
 
     try {
-      // 2. Load active session
-      const savedActive = localStorage.getItem(LOCAL_STORAGE_KEY);
+      // 2. Load active workspace preference
+      const savedWorkspace = (localStorage.getItem("signal_selected_workspace") || "personal") as WorkspaceType;
+      setWorkspace(savedWorkspace);
+
+      const sessionKey = getSessionKey(savedWorkspace);
+      const historyKey = getHistoryKey(savedWorkspace);
+
+      // 3. Load active session for this workspace
+      const savedActive = localStorage.getItem(sessionKey);
       if (savedActive) {
         const parsed = JSON.parse(savedActive);
         
@@ -83,8 +112,8 @@ export default function Home() {
         }
       }
 
-      // 3. Load History list
-      const savedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
+      // 4. Load History list for this workspace
+      const savedHistory = localStorage.getItem(historyKey);
       if (savedHistory) {
         setHistory(JSON.parse(savedHistory));
       }
@@ -138,7 +167,7 @@ export default function Home() {
       };
 
       // Sync active session
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sessionData));
+      localStorage.setItem(getSessionKey(workspace), JSON.stringify(sessionData));
 
       // Append to History
       const historyItem: HistoryItem = {
@@ -154,7 +183,7 @@ export default function Home() {
         // Exclude duplicate inputs to keep history clean
         const filtered = prev.filter((item) => item.input.toLowerCase() !== text.toLowerCase());
         const updated = [historyItem, ...filtered].slice(0, 15);
-        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
+        localStorage.setItem(getHistoryKey(workspace), JSON.stringify(updated));
         return updated;
       });
     } catch (err: any) {
@@ -186,14 +215,14 @@ export default function Home() {
           timestamp,
           completedTasks: updated,
         };
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(session));
+        localStorage.setItem(getSessionKey(workspace), JSON.stringify(session));
 
         // Sync completedTasks state back into history for consistency
         setHistory(prevHist => {
           const updatedHist = prevHist.map(item => 
             item.timestamp === timestamp ? { ...item, completedTasks: updated } : item
           );
-          localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHist));
+          localStorage.setItem(getHistoryKey(workspace), JSON.stringify(updatedHist));
           return updatedHist;
         });
       }
@@ -216,14 +245,14 @@ export default function Home() {
           timestamp,
           completedTasks,
         };
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(session));
+        localStorage.setItem(getSessionKey(workspace), JSON.stringify(session));
 
         // Sync overridden task list into history list
         setHistory(prevHist => {
           const updatedHist = prevHist.map(item => 
             item.timestamp === timestamp ? { ...item, tasks: updated } : item
           );
-          localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHist));
+          localStorage.setItem(getHistoryKey(workspace), JSON.stringify(updatedHist));
           return updatedHist;
         });
       }
@@ -248,14 +277,14 @@ export default function Home() {
       timestamp: item.timestamp,
       completedTasks: item.completedTasks || [],
     };
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sessionData));
+    localStorage.setItem(getSessionKey(workspace), JSON.stringify(sessionData));
   };
 
   const handleDeleteHistory = (e: React.MouseEvent, itemId: string) => {
     e.stopPropagation(); // Avoid restoring session when clicking delete
     setHistory((prev) => {
       const updated = prev.filter((item) => item.id !== itemId);
-      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
+      localStorage.setItem(getHistoryKey(workspace), JSON.stringify(updated));
       return updated;
     });
   };
@@ -268,10 +297,82 @@ export default function Home() {
     setCompletedTasks([]);
     setError(null);
     try {
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      localStorage.removeItem(getSessionKey(workspace));
     } catch (e) {
       console.error("Failed to clear localStorage:", e);
     }
+  };
+
+  const handleWorkspaceSwitch = (newWorkspace: WorkspaceType) => {
+    if (newWorkspace === workspace) return;
+
+    // 1. Save current workspace state to localStorage first
+    try {
+      const currentSessionKey = getSessionKey(workspace);
+      const currentHistoryKey = getHistoryKey(workspace);
+
+      if (tasks.length > 0) {
+        const sessionData = {
+          input,
+          tasks,
+          summary,
+          timestamp,
+          completedTasks,
+        };
+        localStorage.setItem(currentSessionKey, JSON.stringify(sessionData));
+      } else {
+        localStorage.removeItem(currentSessionKey);
+      }
+      localStorage.setItem(currentHistoryKey, JSON.stringify(history));
+    } catch (e) {
+      console.error("Failed to save current workspace state on switch:", e);
+    }
+
+    // 2. Trigger crossfade transition
+    setIsWorkspaceFading(true);
+
+    setTimeout(() => {
+      // 3. Swap active workspace and save preference
+      setWorkspace(newWorkspace);
+      localStorage.setItem("signal_selected_workspace", newWorkspace);
+
+      // 4. Load target workspace state
+      try {
+        const targetSessionKey = getSessionKey(newWorkspace);
+        const targetHistoryKey = getHistoryKey(newWorkspace);
+
+        const savedActive = localStorage.getItem(targetSessionKey);
+        if (savedActive) {
+          const parsed = JSON.parse(savedActive);
+          setInput(parsed.input || "");
+          setTimestamp(parsed.timestamp || null);
+          setCompletedTasks(parsed.completedTasks || []);
+          setSummary(parsed.summary || "");
+          setTasks(parsed.tasks || []);
+        } else {
+          setInput("");
+          setTimestamp(null);
+          setCompletedTasks([]);
+          setSummary("");
+          setTasks([]);
+        }
+
+        const savedHistory = localStorage.getItem(targetHistoryKey);
+        if (savedHistory) {
+          setHistory(JSON.parse(savedHistory));
+        } else {
+          setHistory([]);
+        }
+      } catch (e) {
+        console.error("Failed to load target workspace state on switch:", e);
+      }
+
+      // 5. Reset selected filter dimension
+      setSelectedDimension(null);
+
+      // 6. Complete transition fade-in
+      setIsWorkspaceFading(false);
+    }, 150);
   };
 
   const handleExampleTrigger = () => {
@@ -343,14 +444,14 @@ export default function Home() {
         {/* satisfies lightweight checkbox tick */}
         <div
           onClick={() => handleToggleComplete(item.task)}
-          className="flex-shrink-0 mt-0.5 cursor-pointer w-4 h-4 rounded border border-slate-700 bg-[#080C18]/60 flex items-center justify-center transition-all duration-200 hover:border-amber-500 bg-amber-500/5 select-none"
+          className={`flex-shrink-0 mt-0.5 cursor-pointer w-4 h-4 rounded border border-slate-700 bg-[#080C18]/60 flex items-center justify-center transition-all duration-200 select-none ${isPersonal ? "hover:border-amber-500 bg-amber-500/5" : "hover:border-[#38BDF8] bg-[#38BDF8]/5"}`}
         >
           {isCompleted ? (
-            <svg className="w-3.5 h-3.5 text-amber-500 font-bold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+            <svg className={`w-3.5 h-3.5 font-bold ${accentText}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           ) : (
-            <div className="w-1.5 h-1.5 rounded-sm bg-transparent group-hover:bg-amber-500/20"></div>
+            <div className={`w-1.5 h-1.5 rounded-sm bg-transparent group-hover:${accentBgPill}`}></div>
           )}
         </div>
 
@@ -408,7 +509,7 @@ export default function Home() {
           
           {/* Sidebar Top / Close Toggle */}
           <div className="flex items-center justify-between flex-shrink-0">
-            <span className="text-[10px] font-bold tracking-widest text-amber-500 uppercase">
+            <span className={`text-[10px] font-bold tracking-widest uppercase ${accentText}`}>
               Signal OS
             </span>
             <button
@@ -428,23 +529,40 @@ export default function Home() {
             </h2>
             
             <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-1 pr-1">
-              {history.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => handleRestoreSession(item)}
-                  className={`group relative px-2.5 py-1.5 rounded-lg text-xs font-light text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all duration-200 cursor-pointer flex items-center justify-between select-none
-                    ${timestamp === item.timestamp ? "bg-white/5 text-amber-500 font-medium" : ""}
-                  `}
-                >
-                  <span className="truncate pr-4 flex-1">{item.input}</span>
-                  <button
-                    onClick={(e) => handleDeleteHistory(e, item.id)}
-                    className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-slate-200 text-xs px-1 select-none cursor-pointer transition-opacity duration-200 absolute right-1.5"
+              {history.map((item) => {
+                const date = new Date(item.timestamp);
+                const formattedTime = date.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                }) + " • " + date.toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                });
+                
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleRestoreSession(item)}
+                    className={`group relative px-2 py-1.5 rounded-md transition-all duration-200 cursor-pointer flex flex-col gap-0 select-none border
+                      ${timestamp === item.timestamp ? `bg-white/5 ${accentText} font-medium border-white/5` : "text-slate-400 border-transparent hover:text-slate-100 hover:bg-white/5"}
+                    `}
                   >
-                    ×
-                  </button>
-                </div>
-              ))}
+                    <div className="flex items-center justify-between min-w-0 pr-4">
+                      <span className="truncate flex-1 text-[10.5px] leading-snug">{item.input}</span>
+                      <button
+                        onClick={(e) => handleDeleteHistory(e, item.id)}
+                        className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-slate-200 text-xs px-1 select-none cursor-pointer transition-opacity duration-200 absolute right-1 top-1.5"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <span className="text-[7.5px] font-mono tracking-widest text-slate-500 uppercase select-none mt-0.5">
+                      {formattedTime}
+                    </span>
+                  </div>
+                );
+              })}
               {history.length === 0 && (
                 <div className="text-[10px] text-slate-600 italic py-1 pl-1 select-none font-light">
                   No logs recorded.
@@ -465,7 +583,7 @@ export default function Home() {
               {selectedDimension && (
                 <button
                   onClick={() => setSelectedDimension(null)}
-                  className="text-[8px] text-amber-500 hover:text-amber-400 uppercase font-mono tracking-wider cursor-pointer"
+                  className={`text-[8px] uppercase font-mono tracking-wider cursor-pointer ${accentText} ${accentTextHover}`}
                 >
                   Clear Filter
                 </button>
@@ -479,7 +597,7 @@ export default function Home() {
                 className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-light transition-all duration-200 select-none cursor-pointer flex items-center justify-between
                   ${
                     !selectedDimension
-                      ? "text-amber-500 bg-white/5 font-semibold"
+                      ? `${accentText} bg-white/5 font-semibold`
                       : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
                   }
                 `}
@@ -499,7 +617,7 @@ export default function Home() {
                     className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-light transition-all duration-200 select-none cursor-pointer flex items-center justify-between
                       ${
                         isActive
-                          ? "text-amber-500 bg-white/5 font-semibold"
+                          ? `${accentText} bg-white/5 font-semibold`
                           : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
                       }
                     `}
@@ -507,7 +625,7 @@ export default function Home() {
                     <span>{dim}</span>
                     {count > 0 && (
                       <span className={`text-[8.5px] font-mono font-bold px-1.5 rounded-full select-none
-                        ${isActive ? "bg-amber-500/20 text-amber-500" : "text-slate-500 bg-white/5"}
+                        ${isActive ? `${accentBgPill} ${accentText}` : "text-slate-500 bg-white/5"}
                       `}>
                         {count}
                       </span>
@@ -556,23 +674,51 @@ export default function Home() {
         </button>
 
         {/* Radial Ambient Glow */}
-        <div className="absolute top-[-25%] left-[20%] w-[60%] h-[40%] rounded-full bg-amber-500/5 blur-[120px] pointer-events-none select-none"></div>
+        <div className={`absolute top-[-25%] left-[20%] w-[60%] h-[40%] rounded-full blur-[120px] pointer-events-none select-none transition-all duration-500 ${accentGlow}`}></div>
 
-        <div className="flex flex-col gap-6 flex-1 overflow-hidden justify-start">
+        {/* Fading workspace elements wrapper */}
+        <div className={`flex flex-col gap-6 flex-1 overflow-hidden justify-start transition-opacity duration-250 ${isWorkspaceFading ? "opacity-0" : "opacity-100"}`}>
           
-          {/* Top Bar Layout (Center-aligned motivational hero phrase) */}
-          <div className="w-full max-w-2xl mx-auto flex items-center justify-center flex-shrink-0 select-none pt-2">
+          {/* Top Bar Layout (Center-aligned motivational hero phrase & segmented toggle) */}
+          <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center flex-shrink-0 select-none pt-2 gap-4">
             <h1 className="text-xl md:text-2xl font-extralight tracking-[0.2em] text-slate-300 uppercase leading-none font-sans filter drop-shadow-sm select-none text-center">
               {motivationalPhrase}
             </h1>
+            
+            {/* Compact Segmented Workspace Toggle */}
+            <div className="flex p-0.5 rounded-lg bg-[#0F1524]/65 border border-white/5 shadow-inner select-none flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => handleWorkspaceSwitch("personal")}
+                className={`px-3 py-1 rounded-md text-[10px] uppercase font-mono tracking-widest cursor-pointer transition-all duration-200
+                  ${isPersonal 
+                    ? "bg-amber-500/10 text-amber-500 font-bold border border-amber-500/10 shadow-sm" 
+                    : "text-slate-500 hover:text-slate-300 border border-transparent"
+                  }
+                `}
+              >
+                Personal
+              </button>
+              <button
+                type="button"
+                onClick={() => handleWorkspaceSwitch("professional")}
+                className={`px-3 py-1 rounded-md text-[10px] uppercase font-mono tracking-widest cursor-pointer transition-all duration-200
+                  ${!isPersonal 
+                    ? "bg-[#38BDF8]/10 text-[#38BDF8]/75 font-bold border border-[#38BDF8]/10 shadow-sm" 
+                    : "text-slate-500 hover:text-slate-300 border border-transparent"
+                  }
+                `}
+              >
+                Professional
+              </button>
+            </div>
           </div>
-
 
           {/* Claude-style Premium Input Composer */}
           <div className="w-full max-w-2xl mx-auto">
             <form 
               onSubmit={handleInputSubmit} 
-              className="bg-[#0F1524]/65 border border-white/5 shadow-2xl rounded-2xl p-3.5 flex flex-col gap-3 focus-within:border-amber-500/20 focus-within:bg-[#0F1524]/85 transition-all duration-300 focus-within:shadow-[0_8px_40px_-15px_rgba(245,158,11,0.06)]"
+              className={`bg-[#0F1524]/65 border border-white/5 shadow-2xl rounded-2xl p-3.5 flex flex-col gap-3 transition-all duration-300 ${accentBorderFocus} ${accentShadow}`}
             >
               {/* Textarea inside Composer */}
               <textarea
@@ -609,7 +755,7 @@ export default function Home() {
                     ${
                       newThoughtsText.trim().length === 0 || isLoading
                         ? "bg-slate-800/10 text-slate-600 border border-white/5 cursor-not-allowed"
-                        : "bg-white text-slate-950 hover:bg-amber-500 hover:text-white shadow-md active:scale-95"
+                        : `bg-white text-slate-950 hover:text-white shadow-md active:scale-95 ${isPersonal ? "hover:bg-amber-500" : "hover:bg-[#38BDF8]"}`
                     }
                   `}
                 >
@@ -634,10 +780,10 @@ export default function Home() {
             ) : tasks.length > 0 ? (
               <div className="grid grid-cols-3 gap-6 h-full items-stretch overflow-hidden animate-fade-in">
                 
-                {/* 1. MUST DO COLUMN (Warm Amber Header) */}
+                {/* 1. MUST DO COLUMN (Warm/Cool Active Header) */}
                 <div className="flex flex-col gap-3 h-full overflow-hidden" id="col-must-do">
                   <div className="flex items-center justify-between border-b border-white/5 pb-2 px-1 flex-shrink-0">
-                    <span className="text-[10px] font-bold tracking-widest text-amber-500 uppercase">
+                    <span className={`text-[10px] font-bold tracking-widest uppercase ${accentText}`}>
                       Must Do
                     </span>
                     <span className="text-[8px] font-mono text-slate-500">{mustDo.length} items</span>
@@ -652,10 +798,10 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 2. SHOULD DO COLUMN (Muted Amber) */}
+                {/* 2. SHOULD DO COLUMN (Muted Active Header) */}
                 <div className="flex flex-col gap-3 h-full overflow-hidden" id="col-should-do">
                   <div className="flex items-center justify-between border-b border-white/5 pb-2 px-1 flex-shrink-0">
-                    <span className="text-[10px] font-bold tracking-widest text-amber-500/80 uppercase">
+                    <span className={`text-[10px] font-bold tracking-widest uppercase ${accentTextMuted}`}>
                       Should Do
                     </span>
                     <span className="text-[8px] font-mono text-slate-500">{shouldDo.length} items</span>
@@ -693,7 +839,7 @@ export default function Home() {
               /* EMPTY PREVIEW WORKSPACE */
               <div className="h-full flex flex-col items-center justify-center text-center px-4 animate-fade-in">
                 <div className="w-10 h-10 rounded-full border border-white/5 flex items-center justify-center mb-4 select-none">
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/40 animate-ping"></div>
+                  <div className={`w-2.5 h-2.5 rounded-full animate-ping ${accentBgPing}`}></div>
                 </div>
                 <p className="text-sm font-light text-slate-400 select-none max-w-sm leading-relaxed">
                   Enter your morning thoughts in the composer above. Signal will map the life dimensions and isolate your focus instantly.
@@ -706,26 +852,13 @@ export default function Home() {
 
         {/* Dynamic Workspace Footers */}
         {tasks.length > 0 && !isLoading && (
-          <div className="flex items-center justify-between max-w-2xl w-full mx-auto pt-3 border-t border-white/5 text-[9px] text-slate-600 select-none flex-shrink-0 mt-3">
-            <button
-              onClick={() => setIsDumpOpen(!isDumpOpen)}
-              className="hover:text-slate-400 underline underline-offset-2 cursor-pointer transition-colors duration-200"
-            >
-              {isDumpOpen ? "Hide Original Thoughts" : "View Original Thoughts"}
-            </button>
-            
+          <div className="flex items-center justify-center max-w-2xl w-full mx-auto pt-3 border-t border-white/5 text-[9px] text-slate-600 select-none flex-shrink-0 mt-3">
             <button
               onClick={handleReset}
-              className="hover:text-amber-500 underline underline-offset-2 cursor-pointer transition-colors duration-200"
+              className={`underline underline-offset-2 cursor-pointer transition-colors duration-200 hover:${accentText}`}
             >
               Clear Workspace
             </button>
-
-            {isDumpOpen && (
-              <div className="absolute bottom-16 left-6 right-6 max-w-2xl mx-auto glass-panel rounded-xl p-3.5 bg-[#0A0F1D]/95 text-[10px] text-slate-500 font-mono leading-relaxed whitespace-pre-wrap select-text animate-fade-in max-h-[80px] overflow-y-auto border border-white/5 shadow-2xl z-20">
-                {input}
-              </div>
-            )}
           </div>
         )}
       </main>

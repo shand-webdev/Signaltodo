@@ -198,11 +198,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const openAiApiKey = process.env.OPENAI_API_KEY;
     const groqApiKey = process.env.GROQ_API_KEY;
 
     // High-fidelity Demo Mode simulation if keys are empty
-    if (!openAiApiKey && !groqApiKey) {
+    if (!groqApiKey) {
       console.warn("No API Keys configured. Falling back to dynamic Demo Mode.");
 
       // Split raw inputs
@@ -275,37 +274,28 @@ export async function POST(request: Request) {
       });
     }
 
-    let url = "";
-    let headers: Record<string, string> = {
+    const provider = "Groq";
+    const model = "llama-3.3-70b-versatile";
+    const url = "https://api.groq.com/openai/v1/chat/completions";
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      "Authorization": `Bearer ${groqApiKey}`,
     };
-    let bodyPayload: any = {};
+    const bodyPayload = {
+      model,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: `Here is my mind dump:\n\n"${content}"` }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.1,
+    };
 
-    if (openAiApiKey) {
-      url = "https://api.openai.com/v1/chat/completions";
-      headers["Authorization"] = `Bearer ${openAiApiKey}`;
-      bodyPayload = {
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Here is my mind dump:\n\n"${content}"` }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.1,
-      };
-    } else if (groqApiKey) {
-      url = "https://api.groq.com/openai/v1/chat/completions";
-      headers["Authorization"] = `Bearer ${groqApiKey}`;
-      bodyPayload = {
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Here is my mind dump:\n\n"${content}"` }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.1,
-      };
-    }
+    // Temporary logs for Vercel debugging (does not log raw keys)
+    console.log("Groq exists:", !!process.env.GROQ_API_KEY);
+    console.log("Groq length:", process.env.GROQ_API_KEY?.length);
+    console.log("Using provider:", provider);
+    console.log("Using model:", model);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20000);
